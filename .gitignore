@@ -1,0 +1,13 @@
+.*.swp
+*.pyc
+*.pyo
+__pycache__
+
+# DE cruft, just in case
+.directory
+desktop.ini
+.DS_Store
+Thumbs.db
+
+# Just in case; rarely do we want to include psds
+*.psd
