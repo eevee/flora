@@ -98,8 +98,49 @@ class Background(cocos.layer.Layer):
         self.add(cocos.layer.ColorLayer(0x6b, 0x87, 0x48, 0xff))
 
 
+GRID_SIZE = 64
+
+class DebugLayer(cocos.layer.Layer):
+    def __init__(self):
+        super(DebugLayer, self).__init__()
+
+        self.label_cache = {}
+
+    def draw(self):
+        import pyglet.graphics
+        dx = cocos.director.director
+        w, h = dx.get_window_size()
+
+        # NOTE: This requires that the direct parent is the ScrollableLayer.
+        # If layers are ever rearranged, this code will need to change to
+        # something less janky
+        x0 = self.parent.view_x
+        y0 = self.parent.view_y
+
+        TEXT_OFFSET = 4
+
+        for x in range(x0 - x0 % GRID_SIZE, x0 + w, GRID_SIZE):
+            pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i', (x, y0, x, y0 + h)))
+
+            if x not in self.label_cache:
+                self.label_cache[x] = pyglet.text.Label(str(x), font_size=8)
+            # TODO need to expire these?  might be more effort than it's worth tbh
+            self.label_cache[x].x = x + TEXT_OFFSET
+            self.label_cache[x].y = y0 + TEXT_OFFSET
+            self.label_cache[x].draw()
+
+        for y in range(y0 - y0 % GRID_SIZE, y0 + h, GRID_SIZE):
+            pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i', (x0, y, x0 + w, y)))
+
+            if y not in self.label_cache:
+                self.label_cache[y] = pyglet.text.Label(str(y), font_size=8)
+            # TODO need to expire these?  might be more effort than it's worth tbh
+            self.label_cache[y].x = x0 + TEXT_OFFSET
+            self.label_cache[y].y = y + TEXT_OFFSET
+            self.label_cache[y].draw()
+
+
 class Midground(cocos.layer.Layer):
-    is_event_handler = True
 
     def __init__(self):
         super(Midground, self).__init__()
@@ -165,6 +206,33 @@ class Midground(cocos.layer.Layer):
         self.cagroo = Actor(cagroo_sprite, position=(400, 300), scale=0.25)
         self.add(self.cagroo)
 
+
+class GameLayer(cocos.layer.Layer):
+    is_event_handler = True
+
+    def __init__(self):
+        super(GameLayer, self).__init__()
+
+        manager = cocos.layer.scrolling.ScrollingManager()
+        scroller = cocos.layer.scrolling.ScrollableLayer()
+        scroller.px_width = 1400
+        scroller.px_height = 1000
+
+
+        scroller.add(Background())
+
+
+        mid = Midground()
+        scroller.add(mid)
+        scroller.add(DebugLayer())
+
+        manager.add(scroller)
+        self.add(manager)
+
+        self.cagroo = mid.cagroo
+
+        self.schedule(lambda *a: manager.set_focus(*self.cagroo.position))
+
     current_direction = None
 
     def on_key_press(self, key, mod):
@@ -194,7 +262,7 @@ def main():
 
     dx.init(width=800, height=600, caption=u'❀  flora  ✿')
 
-    scene = cocos.scene.Scene(Background(), Midground())
+    scene = cocos.scene.Scene(GameLayer())
 
     dx.run(scene)
 
