@@ -6,17 +6,14 @@ import pyglet
 
 TIC = 1 / 24
 
-from flora.spriteset import PosableSprite, UP, DOWN, LEFT, RIGHT
+from flora.resource.spritesheet import Spritesheet, UP, DOWN, LEFT, RIGHT, file_path
 class Actor(cocos.sprite.Sprite):
     # TODO this is already aching to be componentized, oh no
 
-    def __init__(self, spriteset, *args, **kwargs):
-        self.spriteset = spriteset
+    def __init__(self, spritesheet, *args, **kwargs):
+        self.spritesheet = spritesheet
         kwargs.setdefault('anchor', (0, 0))
-        super(Actor, self).__init__(spriteset._pick_image(), *args, **kwargs)
-
-        self.current_frame = 0
-        self.frames = []#imagelist
+        super(Actor, self).__init__(spritesheet._pick_image(), *args, **kwargs)
 
         self.set_state()
 
@@ -25,7 +22,7 @@ class Actor(cocos.sprite.Sprite):
     def walk(self, dx, dy):
         self.set_state(pose='walking')
 
-        step_size = 64
+        step_size = 128
 
         if self.walk_action:
             self.remove_action(self.walk_action)
@@ -43,12 +40,12 @@ class Actor(cocos.sprite.Sprite):
 
     def set_state(self, pose=None, angle=None):
         if pose:
-            self.spriteset.pose = pose
+            self.spritesheet.pose = pose
         if angle:
-            self.spriteset.angle = angle
+            self.spritesheet.angle = angle
 
-        self.image = self.spriteset._pick_image()
-        self.image_anchor = self.spriteset._pick_anchor()
+        self.image = self.spritesheet._pick_image()
+        self.image_anchor = self.spritesheet._pick_anchor()
 
 
     def dont_draw(self):
@@ -96,6 +93,9 @@ class Background(cocos.layer.Layer):
         super(Background, self).__init__()
 
         self.add(cocos.layer.ColorLayer(0x6b, 0x87, 0x48, 0xff))
+
+        import pyglet.image
+        self.add(cocos.sprite.Sprite(pyglet.image.load(file_path('sprites/terrain/grass/texture.png')), anchor=(0, 0)))
 
 
 GRID_SIZE = 64
@@ -145,61 +145,7 @@ class Midground(cocos.layer.Layer):
     def __init__(self):
         super(Midground, self).__init__()
 
-        cagroo_sprite = PosableSprite()
-        cagroo_sprite.add_pose([
-            'assets/characters/cagroo/side3.png',
-        ],
-            'standing',
-            LEFT,
-            anchor=(385, 530 - 456))
-        cagroo_sprite.add_pose([
-            'assets/characters/cagroo/front3.png',
-        ],
-            'standing',
-            DOWN,
-            anchor=(116, 581 - 528))
-        cagroo_sprite.add_pose([
-            'assets/characters/cagroo/back3.png',
-        ],
-            'standing',
-            UP,
-            anchor=(141, 743 - 546))
-        cagroo_sprite.add_pose([
-            'assets/characters/cagroo/side4.png',
-            'assets/characters/cagroo/side5.png',
-            'assets/characters/cagroo/side6.png',
-            'assets/characters/cagroo/side1.png',
-            'assets/characters/cagroo/side2.png',
-            'assets/characters/cagroo/side3.png',
-        ],
-            'walking',
-            LEFT,
-            anchor=(385, 530 - 456))
-        cagroo_sprite.add_pose([
-            'assets/characters/cagroo/front4.png',
-            'assets/characters/cagroo/front5.png',
-            'assets/characters/cagroo/front6.png',
-            'assets/characters/cagroo/front1.png',
-            'assets/characters/cagroo/front2.png',
-            'assets/characters/cagroo/front3.png',
-        ],
-            'walking',
-            DOWN,
-            anchor=(116, 581 - 528))
-        cagroo_sprite.add_pose([
-            'assets/characters/cagroo/back4.png',
-            'assets/characters/cagroo/back5.png',
-            'assets/characters/cagroo/back6.png',
-            'assets/characters/cagroo/back1.png',
-            'assets/characters/cagroo/back2.png',
-            'assets/characters/cagroo/back3.png',
-        ],
-            'walking',
-            UP,
-            anchor=(141, 743 - 546))
-
-        cagroo_sprite.flip_pose('standing', LEFT, RIGHT)
-        cagroo_sprite.flip_pose('walking', LEFT, RIGHT)
+        cagroo_sprite = Spritesheet.load('cagroo')
 
         cagroo_sprite.pose = 'standing'
         cagroo_sprite.angle = UP
@@ -240,16 +186,16 @@ class GameLayer(cocos.layer.Layer):
             self.current_direction = key
 
         if key == pyglet.window.key.RIGHT:
-            self.cagroo.spriteset.angle = RIGHT
+            self.cagroo.spritesheet.angle = RIGHT
             self.cagroo.walk(1, 0)
         elif key == pyglet.window.key.LEFT:
-            self.cagroo.spriteset.angle = LEFT
+            self.cagroo.spritesheet.angle = LEFT
             self.cagroo.walk(-1, 0)
         elif key == pyglet.window.key.DOWN:
-            self.cagroo.spriteset.angle = DOWN
+            self.cagroo.spritesheet.angle = DOWN
             self.cagroo.walk(0, -1)
         elif key == pyglet.window.key.UP:
-            self.cagroo.spriteset.angle = UP
+            self.cagroo.spritesheet.angle = UP
             self.cagroo.walk(0, 1)
 
     def on_key_release(self, key, mod):

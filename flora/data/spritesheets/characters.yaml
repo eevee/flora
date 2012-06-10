@@ -1,0 +1,46 @@
+# XXX: anchor also needs a size.  or is that a property of the whole thing.  auugh collision area might be hard.
+cagroo:
+    filepath: characters/cagroo
+    scale: 0.25
+    poses:
+        standing:
+            DOWN:
+                anchor: [116, 53]
+                frames:
+                    - front3.png
+            LEFT:
+                anchor: [385, 74]
+                frames:
+                    - side3.png
+            UP:
+                anchor: [141, 197]
+                frames:
+                    - back3.png
+        walking:
+            DOWN:
+                anchor: [116, 53]
+                frames:
+                    - front4.png
+                    - front5.png
+                    - front6.png
+                    - front1.png
+                    - front2.png
+                    - front3.png
+            LEFT:
+                anchor: [385, 74]
+                frames:
+                    - side4.png
+                    - side5.png
+                    - side6.png
+                    - side1.png
+                    - side2.png
+                    - side3.png
+            UP:
+                anchor: [141, 197]
+                frames:
+                    - back4.png
+                    - back5.png
+                    - back6.png
+                    - back1.png
+                    - back2.png
+                    - back3.png
