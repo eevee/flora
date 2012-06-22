@@ -24,8 +24,7 @@ class Entity(cocos.sprite.Sprite):
 
         # TODO where does this live
         step_size = 192
-        dx, dy = direction.vector
-        action = cocos.actions.MoveBy((dx * step_size, dy * step_size), 1)
+        action = cocos.actions.MoveBy(direction.vector * step_size, 1)
         action = cocos.actions.Repeat(action)
         self._walking_action = self.do(action)
 

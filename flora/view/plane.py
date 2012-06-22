@@ -1,3 +1,5 @@
+from cocos.euclid import Point2
+
 class Direction(object):
     _instances = dict()
 
@@ -7,7 +9,7 @@ class Direction(object):
 
     def __init__(self, name, vector):
         self.name = name
-        self.vector = vector
+        self.vector = Point2(*vector)
 
         self._instances[name] = self
 

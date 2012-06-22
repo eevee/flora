@@ -3,6 +3,7 @@ from __future__ import absolute_import, division
 import os.path
 
 import cocos
+from cocos.rect import Rect
 import pyglet.image
 import yaml
 
@@ -75,7 +76,6 @@ class WorldMapLayer(cocos.layer.ScrollableLayer):
 
         # Create sprites for the terrain
         # TODO get the res loading outta here
-        for x, y, tex in cmap.visible_cells(self.view_x, self.view_y, self.view_x + self.view_w, self.view_y + self.view_h):
-            img = pyglet.resource.image(os.path.join('sprites/terrain', tex, 'texture.png'))
-            self.batch.add(cocos.sprite.Sprite(img, anchor=(0, 0), position=(x, y)))
+        for cell in cmap.visible_cells(Rect(self.view_x, self.view_y, self.view_w, self.view_h)):
+            self.batch.add(cocos.sprite.Sprite(cell.terrain_texture, anchor=(0, 0), position=cell.point))
 

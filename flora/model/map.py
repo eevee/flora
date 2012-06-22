@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import os.path
 
 import cocos
+from cocos.euclid import Point2
+from cocos.rect import Rect
 import pyglet.image
 import pyglet.resource
 import yaml
@@ -29,17 +31,17 @@ class MapLayout(object):
         map_data = map_defs[map_name]
 
         self.name = map_name
-        # TODO wish i were a namedtuple
-        self.size = tuple(map_data['size'])
+        self.size = Point2(*map_data['size'])
+        self.rect = Rect(0, 0, *self.size)
 
         # "Layers":
         # 1. Background texture.  Default terrain that shows through as an
         # ultimate fallback.
-        self.base_terrain = map_data['base_terrain']
+        self.base_terrain = MapTerrain(map_data['base_terrain'])
 
         # 1b. "Horizon" texture.  Forms a border around the map proper and
         # extends off into infinity.
-        self.horizon_terrain = map_data['horizon_terrain']
+        self.horizon_terrain = MapTerrain(map_data['horizon_terrain'])
 
         # Entity definitions.
         self.entities = []
@@ -51,22 +53,68 @@ class MapLayout(object):
 
         return self
 
-    def visible_cells(self, x0, y0, x1, y1):
+    def visible_cells(self, rect):
         """Iterates over all terrain cells in the given region."""
         # TODO is there an actual "rectangular region" class somewhere?  rather
         # use that
         # TODO gonna need a more interesting interface when there are more
         # entities/decorations
         # XXX cell size really needs to be set somewhere
-        for x in xrange(x0, x1, 64):
-            for y in xrange(y0, y1, 64):
-                if x < 0 or y < 0 or x > self.size[0] or y > self.size[1]:
-                    tex = self.horizon_terrain
-                else:
-                    tex = self.base_terrain
+        GRID_SIZE = 64
+        for x in xrange(rect.left - rect.left % GRID_SIZE, rect.right, GRID_SIZE):
+            for y in xrange(rect.bottom - rect.bottom % GRID_SIZE, rect.top, GRID_SIZE):
+                yield MapCell(self, Point2(x, y))
 
-                # TODO: yield MapCell(tex)
-                yield x, y, tex
+
+class MapCell(object):
+    """I'm just generated as a transient object for representing a cell,
+    really.
+    """
+
+    def __init__(self, map, point):
+        self.map = map
+        self.point = point
+
+    @property
+    def terrain(self):
+        # Note that because these points are the bottom-left of the cell, and
+        # sprites extend upwards and rightwards, a point on the LEFT edge is
+        # INSIDE the map but a point on the RIGHT edge is OUTSIDE the map.
+        rect = self.map.rect
+        if not (rect.left <= self.point.x < rect.right and
+                rect.bottom <= self.point.y < rect.top):
+            return self.map.horizon_terrain
+
+        return self.map.base_terrain
+
+    @property
+    def terrain_texture(self):
+        terrain = self.terrain
+        texture = terrain.texture
+
+        # Surprise!  These are (row, column) which is (y, x).
+        return texture[
+            self.point.y / 64 % texture.rows,
+            self.point.x / 64 % texture.columns,
+        ]
+
+
+### Three (?) main kinds of things that can exist on a map:
+
+class MapTerrain(object):
+    """I am some kinda base flooring."""
+
+    def __init__(self, name):
+        self.name = name
+
+    @property
+    def texture(self):
+        img = pyglet.resource.image(os.path.join('sprites/terrain', self.name, 'texture.png'))
+        image_grid = pyglet.image.ImageGrid(img, rows=img.height / 64, columns=img.width / 64)
+        tex_grid = image_grid.get_texture_sequence()
+
+        return tex_grid
+
 
 class MapEntity(object):
     """I represent the original core functionality of an entity on the map --

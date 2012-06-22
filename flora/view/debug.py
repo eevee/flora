@@ -17,7 +17,7 @@ class DebugLayer(cocos.layer.scrolling.ScrollableLayer):
 
         w, h = self._model.current_map.size
 
-        for x in range(0, w, GRID_SIZE):
+        for x in range(0, w + 1, GRID_SIZE):
             self._batch.add(2, gl.GL_LINES, None,
                 ('v2i', (x, 0, x, h)),
                 ('c4f', (1.0, 1.0, 1.0, 0.5) * 2))
@@ -25,7 +25,7 @@ class DebugLayer(cocos.layer.scrolling.ScrollableLayer):
             label = cocos.text.Label(str(x), position=(x + TEXT_OFFSET, 0 + TEXT_OFFSET), font_size=8)
             self.add(label)
 
-        for y in range(0, h, GRID_SIZE):
+        for y in range(0, h + 1, GRID_SIZE):
             self._batch.add(2, gl.GL_LINES, None,
                 ('v2i', (0, y, w, y)),
                 ('c4f', (1.0, 1.0, 1.0, 0.5) * 2))
