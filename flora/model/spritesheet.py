@@ -4,18 +4,11 @@ import os.path
 
 import cocos
 import pyglet.image
+import pyglet.resource
 import yaml
 
 import flora
-from flora.engine.plane import Direction, UP, DOWN, LEFT, RIGHT
-
-
-# TODO: build all this stuff on top of pyglet.resource
-
-
-def file_path(fn):
-    path, _ = os.path.split(flora.__file__)
-    return os.path.join(path, 'data', fn)
+from flora.view.plane import Direction, UP, DOWN, LEFT, RIGHT
 
 
 class Spritesheet(object):
@@ -28,7 +21,7 @@ class Spritesheet(object):
 
     @classmethod
     def load(cls, name):
-        character_defs = yaml.load(open(file_path('spritesheets/characters.yaml')))
+        character_defs = yaml.load(pyglet.resource.file('spritesheets/characters.yaml'))
         sprite_def = character_defs[name]
 
         self = cls()
@@ -53,7 +46,7 @@ class Spritesheet(object):
         self._views = {}
         # XXX don't hard-code this.  also, what's a good size
         self._txbin = pyglet.image.atlas.TextureBin(
-            texture_width=1024, texture_height=1024)
+            texture_width=2048, texture_height=2048)
         self._current_pose = None
         self._current_angle = DOWN
 
@@ -65,10 +58,10 @@ class Spritesheet(object):
             raise ValueError
 
         animation = pyglet.image.Animation.from_image_sequence(
-            sequence=(pyglet.image.load(file_path(fn)) for fn in filenames),
+            sequence=[pyglet.resource.texture(fn) for fn in filenames],
             period=0.1,
         )
-        animation.add_to_texture_bin(self._txbin)
+        #animation.add_to_texture_bin(self._txbin)
 
         if not anchor:
             anchor = animation.get_max_width() / 2, animation.get_max_height() / 2
@@ -115,3 +108,13 @@ class Spritesheet(object):
 
     def _pick_anchor(self):
         return self._views[self._current_pose][self._current_angle][1]
+
+
+    def set(self, pose=None, angle=None):
+        if pose is not None:
+            self.pose = pose
+
+        if angle is not None:
+            self.angle = angle
+
+        return self._pick_image()

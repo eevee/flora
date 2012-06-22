@@ -1,0 +1,8 @@
+field:
+    size: [320, 320]
+    base_terrain: grass
+    horizon_terrain: forest
+
+    entities:
+      - sprite: cagroo
+        position: [160, 160]
