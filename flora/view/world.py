@@ -5,6 +5,7 @@ import os.path
 import cocos
 from cocos.rect import Rect
 import pyglet.image
+import pyglet.sprite
 import yaml
 
 import flora
@@ -43,8 +44,7 @@ class WorldMapLayer(cocos.layer.ScrollableLayer):
 
         self.current_map = current_map
 
-        self.batch = cocos.batch.BatchNode()
-        self.add(self.batch)
+        self._sprite_cache = {}
 
     def on_enter(self):
         super(WorldMapLayer, self).on_enter()
@@ -59,12 +59,17 @@ class WorldMapLayer(cocos.layer.ScrollableLayer):
             entity = Entity(spritesheet, position=map_entity.initial_position, scale=0.25)
             self.add(entity, z=1)
 
+            map_entity._FIXME_view_entity = entity
+
             if player_entity is None:
                 player_entity = entity
 
         # TODO it doesn't seem like this should be down here.  definitely not in set_view, probably not in sprite-updater code at all.
         # i am still not a fan of the input handling really.  seems like the world view should worry about movement keypresses?
         self.parent.model.push_handlers(player_entity)
+        self.player_entity = player_entity
+
+        self.schedule(lambda dt: self.parent.set_focus(*self.player_entity.position))
 
     def set_view(self, *a, **kw):
         super(WorldMapLayer, self).set_view(*a, **kw)
@@ -72,10 +77,29 @@ class WorldMapLayer(cocos.layer.ScrollableLayer):
         self._update_sprites()
 
     def _update_sprites(self):
+        """Make sure all the visible tiles are showing.
+
+        With some inspiration from cocos.tiles.
+        """
         cmap = self.current_map
+        seen = set()
 
         # Create sprites for the terrain
-        # TODO get the res loading outta here
         for cell in cmap.visible_cells(Rect(self.view_x, self.view_y, self.view_w, self.view_h)):
-            self.batch.add(cocos.sprite.Sprite(cell.terrain_texture, anchor=(0, 0), position=cell.point))
+            # NOTE: Point2 objects hash by IDENTITY, NOT VALUE.  Upshot: DO NOT
+            # USE THEM AS DICT KEYS OR SET VALUES
+            key = tuple(cell.point)
+            seen.add(key)
+            if key in self._sprite_cache:
+                continue
 
+            self._sprite_cache[key] = pyglet.sprite.Sprite(
+                cell.terrain_texture,
+                x=cell.point.x, y=cell.point.y,
+                batch=self.batch)
+
+        # Drop any sprites no longer visible on-screen
+        unseen = set(self._sprite_cache) - seen
+        for key in unseen:
+            self._sprite_cache[key].delete()
+            self._sprite_cache.pop(key)

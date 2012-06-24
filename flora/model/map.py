@@ -23,6 +23,9 @@ class MapLayout(object):
     # XXX am i just the pristine copy, or what?  what happens with changes,
     # dudes walking around, etc?
 
+    # XXX actually this is a property of the whole world.
+    GRID_SIZE = 64
+
     @classmethod
     def load(cls, map_name):
         self = cls()
@@ -48,21 +51,17 @@ class MapLayout(object):
         for entity_data in map_data['entities']:
             self.entities.append(MapEntity(entity_data))
 
-        #from flora.engine.debug import DebugLayer
-        #self.add(DebugLayer(self.model), z=9999)
-
         return self
 
     def visible_cells(self, rect):
         """Iterates over all terrain cells in the given region."""
-        # TODO is there an actual "rectangular region" class somewhere?  rather
-        # use that
-        # TODO gonna need a more interesting interface when there are more
-        # entities/decorations
-        # XXX cell size really needs to be set somewhere
-        GRID_SIZE = 64
-        for x in xrange(rect.left - rect.left % GRID_SIZE, rect.right, GRID_SIZE):
-            for y in xrange(rect.bottom - rect.bottom % GRID_SIZE, rect.top, GRID_SIZE):
+        x0 = int(rect.left - rect.left % self.GRID_SIZE)
+        x1 = int(rect.right)
+        y0 = int(rect.bottom - rect.bottom % self.GRID_SIZE)
+        y1 = int(rect.top)
+
+        for x in xrange(x0, x1, self.GRID_SIZE):
+            for y in xrange(y0, y1, self.GRID_SIZE):
                 yield MapCell(self, Point2(x, y))
 
 
