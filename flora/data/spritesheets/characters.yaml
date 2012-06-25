@@ -2,23 +2,24 @@
 cagroo:
     filepath: characters/cagroo
     scale: 0.25
+    radius: 40
     poses:
         standing:
             DOWN:
-                anchor: [116, 53]
+                anchor: [116, 170]
                 frames:
                     - front3.png
             LEFT:
-                anchor: [385, 74]
+                anchor: [385, 134]
                 frames:
                     - side3.png
             UP:
-                anchor: [141, 197]
+                anchor: [141, 257]
                 frames:
                     - back3.png
         walking:
             DOWN:
-                anchor: [116, 53]
+                anchor: [116, 170]
                 frames:
                     - front4.png
                     - front5.png
@@ -27,7 +28,7 @@ cagroo:
                     - front2.png
                     - front3.png
             LEFT:
-                anchor: [385, 74]
+                anchor: [385, 134]
                 frames:
                     - side4.png
                     - side5.png
@@ -36,7 +37,7 @@ cagroo:
                     - side2.png
                     - side3.png
             UP:
-                anchor: [141, 197]
+                anchor: [141, 257]
                 frames:
                     - back4.png
                     - back5.png

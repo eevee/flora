@@ -55,11 +55,8 @@ class WorldMapLayer(cocos.layer.ScrollableLayer):
 
         player_entity = None
         for map_entity in self.current_map.entities:
-            spritesheet = Spritesheet.load(map_entity.spritesheet_name)
-            entity = Entity(spritesheet, position=map_entity.initial_position, scale=0.25)
+            entity = Entity(map_entity)
             self.add(entity, z=1)
-
-            map_entity._FIXME_view_entity = entity
 
             if player_entity is None:
                 player_entity = entity

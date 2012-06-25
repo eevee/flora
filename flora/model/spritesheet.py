@@ -19,54 +19,67 @@ class Spritesheet(object):
     facing.
     """
 
+    _loaded = {}
+
+    # Defaults
+    scale = 1
+
     @classmethod
     def load(cls, name):
+        if name in cls._loaded:
+            return cls._loaded[name]
+
+        # TODO put this in __init__
+        # TODO require a default pose
+        # TODO default angle to DOWN
+        # TODO simpler way to support a single sprite, like a flower
         character_defs = yaml.load(pyglet.resource.file('spritesheets/characters.yaml'))
         sprite_def = character_defs[name]
 
         self = cls()
-        for pose, posedata in sprite_def['poses'].iteritems():
-            for anglename, angledata in posedata.iteritems():
-                angle = Direction._instances[anglename]
-                # TODO pull this out, i think?  or maybe this whole thing
-                # should merge with add_pose
-                frames = [os.path.join('sprites', sprite_def['filepath'], frame) for frame in angledata['frames']]
+        sprite_path = os.path.join('sprites', sprite_def['filepath'])
+        for pose_name, pose_data in sprite_def['poses'].iteritems():
+            for angle_name, angle_data in pose_data.iteritems():
+                pose = self._views.setdefault(pose_name, {})
+                if angle_name in pose:
+                    raise ValueError
 
-                self.add_pose(frames, pose, angle, anchor=angledata['anchor'])
+                frame_textures = []
+                for frame_path in angle_data['frames']:
+                    frame_textures.append(pyglet.resource.texture(
+                        os.path.join(sprite_path, frame_path)))
 
-            if 'LEFT' in posedata and 'RIGHT' not in posedata:
-                self.flip_pose(pose, LEFT, RIGHT)
-            elif 'RIGHT' in posedata and 'LEFT' not in posedata:
-                self.flip_pose(pose, RIGHT, LEFT)
+                animation = pyglet.image.Animation.from_image_sequence(
+                    sequence=frame_textures,
+                    period=0.1,
+                )
 
+                if 'anchor' in angle_data:
+                    anchor = angle_data['anchor']
+                else:
+                    anchor = animation.get_max_width() / 2, animation.get_max_height() / 2
+
+                angle = Direction._instances[angle_name]
+                pose[angle] = animation, anchor
+
+            if 'LEFT' in pose_data and 'RIGHT' not in pose_data:
+                self.flip_pose(pose_name, LEFT, RIGHT)
+            elif 'RIGHT' in pose_data and 'LEFT' not in pose_data:
+                self.flip_pose(pose_name, RIGHT, LEFT)
+
+        if 'scale' in sprite_def:
+            self.scale = sprite_def['scale']
+
+        # TODO is this part of an entity?  seems like it...  should be?  should
+        # entity types be another middle layer?  (yes)
+        self.radius = sprite_def['radius']
+
+        cls._loaded[name] = self
         return self
 
 
     def __init__(self, *args, **kwargs):
         self._views = {}
-        # XXX don't hard-code this.  also, what's a good size
-        self._txbin = pyglet.image.atlas.TextureBin(
-            texture_width=2048, texture_height=2048)
-        self._current_pose = None
-        self._current_angle = DOWN
-
-    def add_pose(self, filenames, view_name, angle, anchor=None):
-        # TODO support angle=ALL, and make it default?
-        # TODO support reflecting left/right
-        view = self._views.setdefault(view_name, {})
-        if angle in view:
-            raise ValueError
-
-        animation = pyglet.image.Animation.from_image_sequence(
-            sequence=[pyglet.resource.texture(fn) for fn in filenames],
-            period=0.1,
-        )
-        #animation.add_to_texture_bin(self._txbin)
-
-        if not anchor:
-            anchor = animation.get_max_width() / 2, animation.get_max_height() / 2
-
-        view[angle] = animation, anchor
 
     def flip_pose(self, view_name, angle_from, angle_to):
         # copies with a horizontal flip
@@ -80,41 +93,8 @@ class Spritesheet(object):
         view[angle_to] = new_animation, new_anchor
 
 
-    @property
-    def pose(self):
-        return self._current_pose
+    def pick_image(self, pose, angle):
+        return self._views[pose][angle][0]
 
-    @pose.setter
-    def pose(self, value):
-        if value not in self._views:
-            raise KeyError
-
-        self._current_pose = value
-
-    @property
-    def angle(self):
-        return self._current_angle
-
-    @angle.setter
-    def angle(self, value):
-        if value not in (UP, DOWN, LEFT, RIGHT):
-            raise KeyError
-
-        self._current_angle = value
-
-
-    def _pick_image(self):
-        return self._views[self._current_pose][self._current_angle][0]
-
-    def _pick_anchor(self):
-        return self._views[self._current_pose][self._current_angle][1]
-
-
-    def set(self, pose=None, angle=None):
-        if pose is not None:
-            self.pose = pose
-
-        if angle is not None:
-            self.angle = angle
-
-        return self._pick_image()
+    def pick_anchor(self, pose, angle):
+        return self._views[pose][angle][1]

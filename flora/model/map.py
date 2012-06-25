@@ -11,6 +11,7 @@ import yaml
 
 import flora
 from flora.view.plane import Direction, UP, DOWN, LEFT, RIGHT
+from flora.model.spritesheet import Spritesheet
 
 
 class MapLayout(object):
@@ -121,5 +122,27 @@ class MapEntity(object):
     """
 
     def __init__(self, entity_data):
-        self.spritesheet_name = entity_data['sprite']
+        sprite_name = entity_data['sprite']
+        self.sprite = Spritesheet.load(sprite_name)
+
         self.initial_position = tuple(entity_data['position'])
+        scale2 = entity_data.get('scale', 1)
+        self.scale = self.sprite.scale * scale2
+        self.radius = self.sprite.radius * scale2
+
+    def register_view(self, entity_view):
+        self.view = entity_view
+
+    # TODO seems weird to have these live on the view.
+
+    @property
+    def position(self):
+        return Point2(*self.view.position)
+
+    @property
+    def size(self):
+        return Point2(self.view.width, self.view.height)
+
+    @property
+    def anchor(self):
+        return Point2(*self.view.image_anchor) * self.scale
