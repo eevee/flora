@@ -4,7 +4,7 @@ import cocos
 from cocos.euclid import Point2
 from cocos.rect import Rect
 
-from flora.view.plane import DOWN
+from flora.util.direction import DOWN
 
 
 def rect_contain_rect(r1, r2):
@@ -39,22 +39,27 @@ class Walk(cocos.actions.Action):
             r * 2,
         )
 
-        # XXX YEAH NOPE
-        if rect_overlap(collision_box, Rect(0, 0, 320, 320)):
+        if self.target.would_collide(collision_box):
             # Collision!  Can't move there.
             return
 
         self.target.position = new_position
 
 
+# TODO: componentize me; make the sprite a child node and everything JW
 class Entity(cocos.sprite.Sprite):
-    def __init__(self, entity_model, **kw):
+    """I represent an active, concrete object in the world.
 
+    I straddle model and view: my position is canonical both as
+    display coordinates and physics coordinates.
+    """
+
+    def __init__(self, spritesheet, initial_position, scale, radius):
         # TODO what if the model's spritesheet changes
-        self.spritesheet = entity_model.sprite
+        self.spritesheet = spritesheet
 
-        # TODO this is bad.  need a better way to update view from model.
-        self.radius = entity_model.radius
+        # TODO this should be part of an entity's "type"
+        self.radius = radius
 
         # TODO: self._pose = self.spritesheet.default_pose
         self._pose = 'standing'
@@ -63,11 +68,21 @@ class Entity(cocos.sprite.Sprite):
         super(Entity, self).__init__(
             self.spritesheet.pick_image(self._pose, self._angle),
             anchor=self.spritesheet.pick_anchor(self._pose, self._angle),
-            position=entity_model.initial_position,
-            scale=entity_model.scale,
-            **kw)
+            position=initial_position,
+            scale=scale,
+        )
 
-        entity_model.register_view(self)
+    # TODO i wish this was standard, and that position+anchor were also Point2s
+    @property
+    def size(self):
+        return Point2(self.width, self.height)
+
+
+    def would_collide(self, collision_box):
+        # TODO clearly this interface is suboptimal  :)
+        # TODO who should own this stuff?  the world object?  or me, in a
+        # component?
+        return rect_overlap(collision_box, self._world._mapdata.rect)
 
     def update_spritesheet(self, pose=None, angle=None):
         if pose is not None:

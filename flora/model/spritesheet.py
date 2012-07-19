@@ -2,13 +2,11 @@ from __future__ import absolute_import
 
 import os.path
 
-import cocos
 import pyglet.image
 import pyglet.resource
 import yaml
 
-import flora
-from flora.view.plane import Direction, UP, DOWN, LEFT, RIGHT
+from flora.util.direction import Direction, LEFT, RIGHT
 
 
 class Spritesheet(object):

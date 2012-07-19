@@ -1,72 +1,70 @@
 # encoding: utf8
 from __future__ import division
 
-import sys
-
 import cocos
 import pyglet
 
-from flora.model.spritesheet import Spritesheet, UP, DOWN, LEFT, RIGHT
-from flora.model import Flora
-from flora.view.world import WorldLayer
-import flora.view.plane
+from flora.engine.input import InputLayer
+from flora.engine.map import MapLayer
+from flora.load.map import MapLoader
 
-class WorldController(cocos.layer.Layer):
-    """I accept input and direct it around.  I'm only concerned with
-    controlling the *game world*; I don't much care about menus or much else.
+class GameState(pyglet.event.EventDispatcher):
+    """I keep track of high-level, game-global state: the player's progress,
+    roughly what's going on at the moment, etc.  I also act as an event hub for
+    player input.
 
-    You might consider me the C in MVC.  Maybe.
+    Don't tell anyone, but I'm like the M in MVC.
     """
-    is_event_handler = True
 
-    _key_direction_map = {
-        pyglet.window.key.UP: flora.view.plane.UP,
-        pyglet.window.key.DOWN: flora.view.plane.DOWN,
-        pyglet.window.key.LEFT: flora.view.plane.LEFT,
-        pyglet.window.key.RIGHT: flora.view.plane.RIGHT,
-    }
+    _map = None
 
-    def __init__(self, model):
-        super(WorldController, self).__init__()
+    def __init__(self):
+        self.loader = MapLoader(['maps/field.yaml'], [])
 
-        self._direction_stack = []
+    def change_map(self, map_name):
+        mapdata = self.loader.load(map_name)
+        # TODO blah blah another circular ref.
+        self._map = MapLayer(self, mapdata)
+        return self._map
 
-        self.model = model
 
-        self.add(WorldLayer(model))
+    def start_walking(self, direction):
+        self.dispatch_event('on_start_walking', direction)
 
-    def on_key_press(self, key, mod):
-        if key in self._key_direction_map:
-            direction = self._key_direction_map[key]
-            self.model.player_walk(direction)
-            self._direction_stack.append(direction)
+    def stop_walking(self):
+        self.dispatch_event('on_stop_walking')
 
-    def on_key_release(self, key, mod):
-        if key in self._key_direction_map:
-            direction = self._key_direction_map[key]
-            if direction in self._direction_stack:
-                self._direction_stack.remove(direction)
-                if self._direction_stack:
-                    self.model.player_walk(self._direction_stack[-1])
-                else:
-                    self.model.player_stop()
+GameState.register_event_type('on_start_walking')
+GameState.register_event_type('on_stop_walking')
 
-def main():
-    # Set up Pyglet resource stuff
-    pyglet.resource.path.append('data')
-    pyglet.resource.reindex()
 
-    # Initialize the window
-    # NOTE: 16:10 is good for monitors, but 16:9 is good for TVs.  hm.
-    dx = cocos.director.director
-    dx.init(width=1280, height=800, caption=u'❀  flora  ✿', vsync=False)
+class Flora(object):
+    """Hello!  I'm the entire game.  What's up.
 
-    model = Flora()
-    model.load_map('field')
-    # TODO put player object ????
-    scene = cocos.scene.Scene(WorldController(model))
+    I'm the main entry point: I do very basic setup and teardown.
+    """
 
-    dx.run(scene)
+    def __init__(self):
+        # Set up Pyglet resource stuff
+        pyglet.resource.path.append('data')
+        pyglet.resource.reindex()
+
+    def run(self):
+        # Initialize the window
+        # NOTE: 16:10 is good for monitors, but 16:9 is good for TVs.  hm.
+        dx = cocos.director.director
+        dx.init(width=1280, height=800, caption=u'❀  flora  ✿', vsync=False)
+
+        # Create the game proper and fire it off
+        # TODO this will need some stuff to handle a main menu scene later
+        state = GameState()
+
+        controller = InputLayer(state)
+        game = state.change_map('field')
+
+        scene = cocos.scene.Scene(controller, game)
+        dx.run(scene)
+
 
 if __name__ == '__main__':
-    main()
+    Flora().run()
