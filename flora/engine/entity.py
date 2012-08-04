@@ -77,6 +77,16 @@ class Entity(cocos.sprite.Sprite):
     def size(self):
         return Point2(self.width, self.height)
 
+    @property
+    def collision_rect(self):
+        r = self.radius
+        return Rect(
+            self.position[0] - r,
+            self.position[1] - r,
+            r * 2,
+            r * 2,
+        )
+
 
     # TODO overriding properties is awkward.
     def _set_position(self, value):
@@ -97,7 +107,21 @@ class Entity(cocos.sprite.Sprite):
         # TODO clearly this interface is suboptimal  :)
         # TODO who should own this stuff?  the world object?  or me, in a
         # component?
-        return rect_overlap(collision_box, self._world._mapdata.rect)
+
+        # Check the map boundaries
+        if rect_overlap(collision_box, self._world._mapdata.rect):
+            return True
+
+        # Check against other entities
+        # XXX THIS SUCKS IN SO MANY WAYS
+        for z, entity in self.parent.children:
+            if entity is self:
+                continue
+
+            if rect_overlap(collision_box, entity.collision_rect):
+                return True
+
+        return False
 
     def update_spritesheet(self, pose=None, angle=None):
         if pose is not None:

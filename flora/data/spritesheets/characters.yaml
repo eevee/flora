@@ -50,10 +50,10 @@ cagroo:
 house:
     filepath: buildings/house
     scale: 0.25
-    radius: 10
+    radius: 50
     poses:
         standing:
             DOWN:
-                anchor: [0, 0]
+                anchor: [800, 300]
                 frames:
                     - house1.png
