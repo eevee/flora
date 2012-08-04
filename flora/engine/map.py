@@ -130,3 +130,18 @@ class TerrainLayer(cocos.layer.ScrollableLayer):
 
 class EntityLayer(cocos.layer.ScrollableLayer):
     """I'm kind of a dumb container for entities so far."""
+
+    def reorder_child(self, child, z):
+        """Changes the z-index of a given child."""
+        # XXX this would be nice to have in core tbh
+        # XXX actually i don't know how to do this efficiently...
+
+        self.children = [item for item in self.children if item[1] is not child]
+        import bisect
+        bisect.insort(self.children, (z, child))
+
+    # XXX might work better to skip the cocosnode stuff entirely, use pyglet
+    # sprites directly, and override draw() here.
+
+
+

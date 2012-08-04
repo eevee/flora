@@ -45,3 +45,15 @@ cagroo:
                     - back1.png
                     - back2.png
                     - back3.png
+
+# TODO: ok, this is ridiculous.  clearly not everything needs poses, or a whole directory of sprites even.  house doesn't even have angles.  most things don't!
+house:
+    filepath: buildings/house
+    scale: 0.25
+    radius: 10
+    poses:
+        standing:
+            DOWN:
+                anchor: [0, 0]
+                frames:
+                    - house1.png

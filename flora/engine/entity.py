@@ -78,6 +78,21 @@ class Entity(cocos.sprite.Sprite):
         return Point2(self.width, self.height)
 
 
+    # TODO overriding properties is awkward.
+    def _set_position(self, value):
+        super(Entity, self)._set_position(value)
+        if self.parent:
+            x, y = value
+            self.parent.reorder_child(self, -y)
+    position = property(cocos.sprite.Sprite._get_position, _set_position)
+
+    def on_enter(self):
+        super(Entity, self).on_enter()
+
+        self.parent.reorder_child(self, - self.position[1])
+
+
+
     def would_collide(self, collision_box):
         # TODO clearly this interface is suboptimal  :)
         # TODO who should own this stuff?  the world object?  or me, in a
