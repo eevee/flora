@@ -31,7 +31,7 @@ class Walk(cocos.actions.Action):
         #self.target.position = self.start_position + self.delta * dt
         new_position = self.target.position + self.velocity * dt
 
-        r = self.target.radius
+        r = self.target.entity_type.shape  # XXX this should ask the entity for a collision shape
         collision_box = Rect(
             new_position.x - r,
             new_position.y - r,
@@ -54,22 +54,23 @@ class Entity(cocos.sprite.Sprite):
     display coordinates and physics coordinates.
     """
 
-    def __init__(self, spritesheet, initial_position, scale, radius):
-        # TODO what if the model's spritesheet changes
-        self.spritesheet = spritesheet
-
-        # TODO this should be part of an entity's "type"
-        self.radius = radius
+    def __init__(self, entity_type, initial_position, scale):
+        self.entity_type = entity_type
 
         # TODO: self._pose = self.spritesheet.default_pose
-        self._pose = 'standing'
+        self._pose = 'default'
         self._angle = DOWN
+
+        # TODO kind of not liking the state of the spritesheet class.
+        # dismantle it into EntityType?  make it a template that spawns state
+        # objects for Walk to use?  what about terrain sounds?
+        self.spritesheet = self.entity_type.spritesheet
 
         super(Entity, self).__init__(
             self.spritesheet.pick_image(self._pose, self._angle),
             anchor=self.spritesheet.pick_anchor(self._pose, self._angle),
             position=initial_position,
-            scale=scale,
+            scale=scale * entity_type.scale,
         )
 
     # TODO i wish this was standard, and that position+anchor were also Point2s
@@ -79,7 +80,7 @@ class Entity(cocos.sprite.Sprite):
 
     @property
     def collision_rect(self):
-        r = self.radius
+        r = self.entity_type.shape  # XXX well...
         return Rect(
             self.position[0] - r,
             self.position[1] - r,
@@ -149,7 +150,7 @@ class Entity(cocos.sprite.Sprite):
 
 
     def on_stop_walking(self):
-        self.update_spritesheet(pose='standing')
+        self.update_spritesheet(pose='default')
 
         if self._walking_action:
             self.remove_action(self._walking_action)

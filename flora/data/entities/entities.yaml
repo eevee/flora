@@ -1,0 +1,58 @@
+# XXX: anchor also needs a size.  or is that a property of the whole thing.  auugh collision area might be hard.
+# XXX: need to put sound in here i guess.
+cagroo:
+    base_path: characters/cagroo
+    scale: 0.25
+    shape: 40
+    poses:
+        default:
+            DOWN:
+                anchor: [116, 170]
+                frames:
+                    - front3.png
+            LEFT:
+                anchor: [385, 134]
+                frames:
+                    - side3.png
+            UP:
+                anchor: [141, 257]
+                frames:
+                    - back3.png
+        walking:
+            DOWN:
+                anchor: [116, 170]
+                frames:
+                    - front4.png
+                    - front5.png
+                    - front6.png
+                    - front1.png
+                    - front2.png
+                    - front3.png
+            LEFT:
+                anchor: [385, 134]
+                frames:
+                    - side4.png
+                    - side5.png
+                    - side6.png
+                    - side1.png
+                    - side2.png
+                    - side3.png
+            UP:
+                anchor: [141, 257]
+                frames:
+                    - back4.png
+                    - back5.png
+                    - back6.png
+                    - back1.png
+                    - back2.png
+                    - back3.png
+
+# TODO: ok, this is ridiculous.  clearly not everything needs poses, or a whole directory of sprites even.  house doesn't even have angles.  most things don't!
+house:
+    base_path: buildings/house
+    scale: 0.25
+    shape: 50
+    pose:
+        ALL:
+            anchor: [800, 300]
+            frame: house1.png

@@ -71,7 +71,7 @@ class DebugLayer(cocos.layer.scrolling.ScrollableLayer):
                 ('c4f', (1.0, 1.0, 0.0, 1.0) * 4))
 
             # Collision footprint...  kinda
-            R = entity.radius
+            R = entity.entity_type.shape
             entity_batch.add(4, gl.GL_QUADS, None,
                 ('v2f', (x - R, y - R, x + R, y - R, x + R, y + R, x - R, y + R)),
                 ('c4f', (1.0, 1.0, 0.0, 0.2) * 4))

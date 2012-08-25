@@ -12,6 +12,10 @@ from flora.engine.entity import Entity
 from flora.model.spritesheet import Spritesheet
 from flora.util.data import reify
 
+# TODO reify is great, but has the minor downside in here that it duplicates
+# everything: both the data and the cached properties exist.  of course, the
+# data stays loaded forever anyway, so maybe this is just part of that same
+# problem
 class MapData(object):
     """Lazy object that represents data for a map.
 
@@ -56,29 +60,56 @@ class MapData(object):
     @property
     def entities(self):
         for entity_data in self._data['entities']:
-            scale2 = entity_data.get('scale', 1)
-            spritesheet = Spritesheet.load(entity_data['sprite'])
             yield Entity(
+                entity_type=self._loader.load_entity_type(entity_data['type']),
                 initial_position=Point2(*entity_data['position']),
-                spritesheet=spritesheet,
-                scale=spritesheet.scale * scale2,
-                radius=spritesheet.radius * scale2,
+                scale=entity_data.get('scale', 1),
             )
 
 
-class MapLoader(object):
-    """Loads a map.  Returns a `MapLayer`.
+class EntityTypeData(object):
+    def __init__(self, loader, name, data):
+        self.name = name
+        self._loader = loader
+        self._data = data
 
-    Flora maps use a hybrid grid system: the terrain (i.e., background) itself
-    is a fixed grid of cells, but decorations and other objects can exist at
-    any arbitrary coordinates.
-    """
+    @reify
+    def base_path(self):
+        return self._data['base_path']
+
+    @reify
+    def scale(self):
+        return self._data['scale']
+
+    @reify
+    def shape(self):
+        return self._data['shape']
+
+    @reify
+    def spritesheet(self):
+        return Spritesheet.load(self.name, self._data)
+
+
+
+
+class Loader(object):
     # XXX am i just the pristine copy, or what?  what happens with changes,
     # dudes walking around, etc?
 
-    def __init__(self, map_sources, sprite_sources):
+    def __init__(self, map_sources, entity_sources):
         self.map_sources = [yaml.load(pyglet.resource.file(fn)) for fn in map_sources]
+        self.entity_sources = [yaml.load(pyglet.resource.file(fn)) for fn in entity_sources]
 
-    def load(self, map_name):
+    def load_map(self, map_name):
+        """Loads a map.  Returns a `MapData`.
+
+        Flora maps use a hybrid grid system: the terrain (i.e., background)
+        itself is a fixed grid of cells, but decorations and other objects can
+        exist at any arbitrary coordinates.
+        """
         # TODO caching?  ??  ???????
         return MapData(self, map_name, self.map_sources[0][map_name])
+
+    def load_entity_type(self, type_name):
+        """Loads an entity type.  Returns an `EntityTypeData`."""
+        return EntityTypeData(self, type_name, self.entity_sources[0][type_name])

@@ -6,7 +6,7 @@ import pyglet
 
 from flora.engine.input import InputLayer
 from flora.engine.map import MapLayer
-from flora.load.map import MapLoader
+from flora.load.map import Loader
 
 class GameState(pyglet.event.EventDispatcher):
     """I keep track of high-level, game-global state: the player's progress,
@@ -19,10 +19,10 @@ class GameState(pyglet.event.EventDispatcher):
     _map = None
 
     def __init__(self):
-        self.loader = MapLoader(['maps/field.yaml'], [])
+        self.loader = Loader(['maps/field.yaml'], ['entities/entities.yaml'])
 
     def change_map(self, map_name):
-        mapdata = self.loader.load(map_name)
+        mapdata = self.loader.load_map(map_name)
         # TODO blah blah another circular ref.
         self._map = MapLayer(self, mapdata)
         return self._map

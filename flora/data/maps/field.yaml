@@ -4,7 +4,7 @@ field:
     horizon_terrain: forest
 
     entities:
-      - sprite: cagroo
+      - type: cagroo
         position: [160, 160]
-      - sprite: house
+      - type: house
         position: [320, 320]
