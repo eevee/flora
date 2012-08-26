@@ -4,46 +4,50 @@ import os.path
 
 import pyglet.image
 import pyglet.resource
-import yaml
 
+from flora.util.data import reify
 from flora.util.direction import Direction, DOWN, LEFT, RIGHT, UP
 
 
-class Spritesheet(object):
-    """I contain sprites for an arbitrary number of poses at multiple angles
-    for a single graphical entity.  For example, an actor may have both running
-    and walking animations.  "Running" and "walking" are two different poses,
-    and both are depicted differently depending on the angle the actor is
-    facing.
-    """
+class EntityTypeData(object):
+    def __init__(self, loader, name, data):
+        #if name in cls._loaded:
+        #    return cls._loaded[name]
 
-    _loaded = {}
+        self.name = name
+        self._loader = loader
+        self._data = data
 
-    @classmethod
-    def load(cls, name, sprite_def):
-        if name in cls._loaded:
-            return cls._loaded[name]
+        sprite_path = os.path.join('sprites', data['base_path'])
+        if 'pose' in data:
+            # 'pose' as a key is a shortcut for a single pose and a single
+            # angle
+            self._load_poses(sprite_path, dict(default=dict(ALL=data['pose'])))
+        else:
+            self._load_poses(sprite_path, data['poses'])
+
+    @reify
+    def scale(self):
+        return self._data['scale']
+
+    @reify
+    def shape(self):
+        return self._data['shape']
+
+    def _load_poses(self, sprite_path, poses):
+
+        self._views = dict()
 
         # TODO put this in __init__
         # TODO require a default pose
         # TODO default angle to DOWN
-        # TODO simpler way to support a single sprite, like a flower
-
-        self = cls()
-        sprite_path = os.path.join('sprites', sprite_def['base_path'])
-
-        # Poses: either one (pose) or many (poses)
-        if 'pose' in sprite_def:
-            poses = dict(default=sprite_def['pose'])
-        else:
-            poses = sprite_def['poses']
-
 
         for pose_name, pose_data in poses.iteritems():
             for angle_name, angle_data in pose_data.iteritems():
                 pose = self._views.setdefault(pose_name, {})
                 if angle_name in pose:
-                    raise ValueError
+                    raise ValueError("Duplicate angle {0} for pose {1}"
+                        .format(angle_name, pose_name))
 
                 # Frames: either one (frame) or many (frames)
                 if 'frame' in angle_data:
@@ -73,18 +77,11 @@ class Spritesheet(object):
                     pose[angle] = animation, anchor
 
             if 'LEFT' in pose_data and 'RIGHT' not in pose_data:
-                self.flip_pose(pose_name, LEFT, RIGHT)
+                self._mirror_pose(pose_name, LEFT, RIGHT)
             elif 'RIGHT' in pose_data and 'LEFT' not in pose_data:
-                self.flip_pose(pose_name, RIGHT, LEFT)
+                self._mirror_pose(pose_name, RIGHT, LEFT)
 
-        cls._loaded[name] = self
-        return self
-
-
-    def __init__(self, *args, **kwargs):
-        self._views = {}
-
-    def flip_pose(self, view_name, angle_from, angle_to):
+    def _mirror_pose(self, view_name, angle_from, angle_to):
         # copies with a horizontal flip
         view = self._views[view_name]
         if angle_to in view:
@@ -96,8 +93,7 @@ class Spritesheet(object):
         view[angle_to] = new_animation, new_anchor
 
 
-    def pick_image(self, pose, angle):
-        return self._views[pose][angle][0]
-
-    def pick_anchor(self, pose, angle):
-        return self._views[pose][angle][1]
+    def image_anchor_for(self, pose, angle):
+        """Returns a tuple of (image, anchor) for the given pose and angle.
+        """
+        return self._views[pose][angle]

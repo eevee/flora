@@ -53,6 +53,5 @@ house:
     scale: 0.25
     shape: 50
     pose:
-        ALL:
-            anchor: [800, 300]
-            frame: house1.png
+        anchor: [800, 300]
+        frame: house1.png

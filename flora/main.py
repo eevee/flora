@@ -6,7 +6,7 @@ import pyglet
 
 from flora.engine.input import InputLayer
 from flora.engine.map import MapLayer
-from flora.load.map import Loader
+from flora.model.load import Loader
 
 class GameState(pyglet.event.EventDispatcher):
     """I keep track of high-level, game-global state: the player's progress,

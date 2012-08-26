@@ -28,7 +28,6 @@ class Walk(cocos.actions.Action):
         self.velocity = velocity
 
     def step(self, dt):
-        #self.target.position = self.start_position + self.delta * dt
         new_position = self.target.position + self.velocity * dt
 
         r = self.target.entity_type.shape  # XXX this should ask the entity for a collision shape
@@ -57,21 +56,28 @@ class Entity(cocos.sprite.Sprite):
     def __init__(self, entity_type, initial_position, scale):
         self.entity_type = entity_type
 
-        # TODO: self._pose = self.spritesheet.default_pose
         self._pose = 'default'
         self._angle = DOWN
 
-        # TODO kind of not liking the state of the spritesheet class.
-        # dismantle it into EntityType?  make it a template that spawns state
-        # objects for Walk to use?  what about terrain sounds?
-        self.spritesheet = self.entity_type.spritesheet
-
+        image, anchor = entity_type.image_anchor_for(self._pose, self._angle)
         super(Entity, self).__init__(
-            self.spritesheet.pick_image(self._pose, self._angle),
-            anchor=self.spritesheet.pick_anchor(self._pose, self._angle),
+            image,
+            anchor=anchor,
             position=initial_position,
             scale=scale * entity_type.scale,
         )
+
+    def update_pose(self, pose=None, angle=None):
+        """Sets the pose and angle for this entity, and updates the image used
+        as necessary.
+        """
+        if pose is not None:
+            self._pose = pose
+        if angle is not None:
+            self._angle = angle
+
+        self.image, self.image_anchor = self.entity_type.image_anchor_for(
+            self._pose, self._angle)
 
     # TODO i wish this was standard, and that position+anchor were also Point2s
     @property
@@ -124,20 +130,11 @@ class Entity(cocos.sprite.Sprite):
 
         return False
 
-    def update_spritesheet(self, pose=None, angle=None):
-        if pose is not None:
-            self._pose = pose
-        if angle is not None:
-            self._angle = angle
-
-        self.image = self.spritesheet.pick_image(self._pose, self._angle)
-        self.image_anchor = self.spritesheet.pick_anchor(self._pose, self._angle)
-
     # TODO uhoh this stuff needs to be componentized
     _walking_action = None
 
     def on_start_walking(self, direction):
-        self.update_spritesheet(pose='walking', angle=direction)
+        self.update_pose(pose='walking', angle=direction)
 
         if self._walking_action:
             self.remove_action(self._walking_action)
@@ -150,7 +147,7 @@ class Entity(cocos.sprite.Sprite):
 
 
     def on_stop_walking(self):
-        self.update_spritesheet(pose='default')
+        self.update_pose(pose='default')
 
         if self._walking_action:
             self.remove_action(self._walking_action)
