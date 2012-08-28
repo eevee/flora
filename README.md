@@ -8,7 +8,7 @@ We're making a vidya!  Stay tuned.
 - Get setuptools.
 - Install `cocos2d`.
 - Install `pyyaml`.
-- From a flora checkout: `python -m flora.main`
+- From a flora checkout: `python -m flora`
 
 ### Windows notes
 
