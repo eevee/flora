@@ -53,8 +53,9 @@ class Entity(cocos.sprite.Sprite):
     display coordinates and physics coordinates.
     """
 
-    def __init__(self, entity_type, initial_position, scale):
+    def __init__(self, entity_type, initial_position, scale, behaviors):
         self.entity_type = entity_type
+        self.behaviors = behaviors
 
         self._pose = 'default'
         self._angle = DOWN
@@ -124,6 +125,8 @@ class Entity(cocos.sprite.Sprite):
         for z, entity in self.parent.children:
             if entity is self:
                 continue
+            if not entity.entity_type.solid:
+                continue
 
             if rect_overlap(collision_box, entity.collision_rect):
                 return True
@@ -133,7 +136,7 @@ class Entity(cocos.sprite.Sprite):
     # TODO uhoh this stuff needs to be componentized
     _walking_action = None
 
-    def on_start_walking(self, direction):
+    def start_walking(self, direction):
         self.update_pose(pose='walking', angle=direction)
 
         if self._walking_action:
@@ -143,10 +146,18 @@ class Entity(cocos.sprite.Sprite):
         step_size = 192
         action = Walk(direction.vector * step_size)
         action = cocos.actions.Repeat(action)
+
+        import pyglet
+        sound = pyglet.resource.media('sounds/grass2.wav', streaming=False)
+        action |= cocos.actions.Repeat(
+            cocos.actions.CallFunc(sound.play) +
+            # This is some BS but StaticSound.duration is always None
+            cocos.actions.Delay(sound._get_queue_source().duration))
+
         self._walking_action = self.do(action)
 
 
-    def on_stop_walking(self):
+    def stop_walking(self):
         self.update_pose(pose='default')
 
         if self._walking_action:

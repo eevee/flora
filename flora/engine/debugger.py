@@ -19,12 +19,15 @@ class OutlinedPolygonsGroup(pyglet.graphics.Group):
 class DebugLayer(cocos.layer.scrolling.ScrollableLayer):
     """I show the map grid and the positions and sizes of entities."""
 
-    def __init__(self, state):
+    def __init__(self):
         super(DebugLayer, self).__init__()
 
-        self._state = state
         self.grid_batch = pyglet.graphics.Batch()
         self.outlines_group = OutlinedPolygonsGroup()
+
+    @property
+    def map_layer(self):
+        return self.parent
 
     def on_enter(self):
         super(DebugLayer, self).on_enter()
@@ -32,7 +35,7 @@ class DebugLayer(cocos.layer.scrolling.ScrollableLayer):
         TEXT_OFFSET = 4
         GRID_SIZE = 64
 
-        w, h = self._state._map._mapdata.size
+        w, h = self.map_layer._mapdata.size
 
         for x in range(0, w + 1, GRID_SIZE):
             self.grid_batch.add(2, gl.GL_LINES, None,
@@ -54,7 +57,7 @@ class DebugLayer(cocos.layer.scrolling.ScrollableLayer):
         # Update list of entities
         # TODO this should actually update instead of recomputing all day, but, whatever
         entity_batch = pyglet.graphics.Batch()
-        for _, entity in self._state._map.children_names['entities'].children:
+        for _, entity in self.map_layer.children_names['entities'].children:
             x, y = entity.position
             w, h = entity.size
             x0 = entity.position[0] - entity.image_anchor[0] * entity.scale

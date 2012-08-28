@@ -55,3 +55,10 @@ house:
     pose:
         anchor: [800, 300]
         frame: house1.png
+
+unicode-flower:
+    base_path: terrain/grass
+    shape: 18
+    solid: false
+    pose:
+        frame: unicode-flower.png

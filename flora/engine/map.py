@@ -7,6 +7,42 @@ import pyglet.image
 import pyglet.sprite
 
 from flora.engine.debugger import DebugLayer
+from flora.engine.dialogue import DialogueLayer
+from flora.engine.menu import MenuLayer
+import flora.util.direction
+
+class WorldLayer(cocos.layer.Layer):
+    """I'm the root layer class for the game world.  I contain the map, dialog,
+    pause screen, etc., and do some light mediation between all of those
+    screens.
+    """
+
+    is_event_handler = True
+
+    Z_MAP = 0
+    Z_DIALOGUE = 90
+    Z_MENU = 100
+
+    def __init__(self, state, mapdata):
+        super(WorldLayer, self).__init__()
+
+        self._state = state
+
+        self.add(MapLayer(state, mapdata), z=self.Z_MAP)
+
+    def on_key_press(self, key, mod):
+        if key == pyglet.window.key.TAB:
+            self.add(MenuLayer(), name='menu', z=self.Z_MENU)
+
+        else:
+            return False
+
+        return True
+
+
+    def initiate_dialogue(self, dialogue_tree):
+        self.add(DialogueLayer(dialogue_tree), name='dialogue', z=self.Z_DIALOGUE)
+
 
 # TODO people are kinda violatin demeter in me
 # TODO maybe this should actually copy the stuff out of mapdata, not save it
@@ -19,6 +55,12 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
     If you like MVC, I'm the V, but I also act as an interface to the M.
     """
 
+    is_event_handler = True
+
+    Z_TERRAIN = 10
+    Z_ENTITIES = 20
+    Z_DEBUG = 9999
+
     def __init__(self, state, mapdata):
         super(MapLayer, self).__init__()
 
@@ -26,11 +68,11 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
         self._mapdata = mapdata
 
         # Terrain: the background
-        self.add(TerrainLayer(), z=0, name='terrain')
+        self.add(TerrainLayer(), z=self.Z_TERRAIN, name='terrain')
 
         # Entities: the interesting stuff
         entity_layer = EntityLayer()
-        self.add(entity_layer, z=1, name='entities')
+        self.add(entity_layer, z=self.Z_ENTITIES, name='entities')
 
         self._player_entity = None
         for entity in mapdata.entities:
@@ -44,17 +86,73 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
             entity_layer.add(entity)
 
         # Debugging
-        self.add(DebugLayer(state), z=999)
+        self.add(DebugLayer(), z=self.Z_DEBUG, name='debug')
 
     def on_enter(self):
         super(MapLayer, self).on_enter()
 
-        # TODO this feels a little hamfisted, but not sure how it should really
-        # be handled until the "player object" is more well-defined.  perhaps
-        # the player object should register itself directly?
-        self._state.push_handlers(self._player_entity)
+        self.focus_player()
 
-        self.schedule(lambda dt: self.set_focus(*self._player_entity.position))
+        # TODO remove this somehow
+        self._direction_stack = []
+
+    def on_exit(self):
+        self.unschedule(self.focus_player)
+
+        super(MapLayer, self).on_exit()
+
+    def focus_player(self, dt=0.0):
+        self.set_focus(*self._player_entity.position)
+
+
+    ### Input handling for the map
+
+    _key_direction_map = {
+        pyglet.window.key.UP: flora.util.direction.UP,
+        pyglet.window.key.DOWN: flora.util.direction.DOWN,
+        pyglet.window.key.LEFT: flora.util.direction.LEFT,
+        pyglet.window.key.RIGHT: flora.util.direction.RIGHT,
+    }
+
+    def on_key_press(self, key, mod):
+        if key in self._key_direction_map:
+            direction = self._key_direction_map[key]
+            self.unschedule(self.focus_player)
+            self.schedule(self.focus_player)
+            self._player_entity.start_walking(direction)
+            self._direction_stack.append(direction)
+
+        elif key == pyglet.window.key.SPACE:
+            target = self.find_facing(self._player_entity)
+            if target:
+                self.parent.initiate_dialogue(target.behaviors['on_interact'])
+
+        elif key == pyglet.window.key.F4:
+            self.toggle_debugging()
+
+        else:
+            return False
+
+        # Keypress handled
+        return True
+
+    def on_key_release(self, key, mod):
+        if key in self._key_direction_map:
+            direction = self._key_direction_map[key]
+            if direction in self._direction_stack:
+                self._direction_stack.remove(direction)
+                if self._direction_stack:
+                    self._player_entity.start_walking(self._direction_stack[-1])
+                else:
+                    self._player_entity.stop_walking()
+                    self.unschedule(self.focus_player)
+
+
+    def toggle_debugging(self):
+        debug_layer = self.children_names['debug']
+        debug_layer.visible = not debug_layer.visible
+
+    ### Map inspection utilities
 
     def visible_cells(self, rect):
         """Iterates over all terrain cells in the given region."""
@@ -86,6 +184,26 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
                     int(point.x / self._mapdata.GRID_SIZE) % texture.columns,
                 ]
 
+    def find_facing(self, entity):
+        # Find nearby things that respond to use
+        # TODO really need to figure out where this kind of code goes.  surely
+        # in the entity layer.
+        target = entity.collision_rect
+        # TODO goddamn Rect blows
+        target.position = Point2(*target.position) + entity._angle.vector * entity.entity_type.shape * 2  # XXX what should this number be...?  seems like it should be a constant size unrelated to the player's size.  one grid tile?
+        for z, other in self.children_names['entities'].children:
+            if other is entity:
+                continue
+
+            if 'on_interact' not in other.behaviors:
+                continue
+
+            # TODO again, Rect sucks
+            if target.contains(*other.position):
+                # OK, within range
+                # TODO need to, like, pick more cleverly than just the first
+                return other
+
 
 class TerrainLayer(cocos.layer.ScrollableLayer):
     """I draw the main map grid, which is primarily just terrain."""
@@ -106,6 +224,9 @@ class TerrainLayer(cocos.layer.ScrollableLayer):
         With some inspiration from cocos.tiles.
         """
         seen = set()
+
+        # TODO this is causing a fuckton of work even when the view on screen
+        # doesn't actually change.  optimize the hell out of me please
 
         # Create sprites for the terrain
         for point, texture in self.parent.visible_cells(Rect(self.view_x, self.view_y, self.view_w, self.view_h)):
@@ -142,6 +263,3 @@ class EntityLayer(cocos.layer.ScrollableLayer):
 
     # XXX might work better to skip the cocosnode stuff entirely, use pyglet
     # sprites directly, and override draw() here.
-
-
-

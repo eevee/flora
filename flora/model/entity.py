@@ -28,11 +28,15 @@ class EntityTypeData(object):
 
     @reify
     def scale(self):
-        return self._data['scale']
+        return self._data.get('scale', 1)
 
     @reify
     def shape(self):
         return self._data['shape']
+
+    @reify
+    def solid(self):
+        return self._data.get('solid', True)
 
     def _load_poses(self, sprite_path, poses):
 

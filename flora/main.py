@@ -4,8 +4,7 @@ from __future__ import division
 import cocos
 import pyglet
 
-from flora.engine.input import InputLayer
-from flora.engine.map import MapLayer
+from flora.engine.map import WorldLayer
 from flora.model.load import Loader
 
 class GameState(pyglet.event.EventDispatcher):
@@ -16,26 +15,18 @@ class GameState(pyglet.event.EventDispatcher):
     Don't tell anyone, but I'm like the M in MVC.
     """
 
-    _map = None
+    _world = None
 
     def __init__(self):
         self.loader = Loader(['maps/field.yaml'], ['entities/entities.yaml'])
 
+        self.inventory = []
+
     def change_map(self, map_name):
         mapdata = self.loader.load_map(map_name)
         # TODO blah blah another circular ref.
-        self._map = MapLayer(self, mapdata)
-        return self._map
-
-
-    def start_walking(self, direction):
-        self.dispatch_event('on_start_walking', direction)
-
-    def stop_walking(self):
-        self.dispatch_event('on_stop_walking')
-
-GameState.register_event_type('on_start_walking')
-GameState.register_event_type('on_stop_walking')
+        self._world = WorldLayer(self, mapdata)
+        return self._world
 
 
 class Flora(object):
@@ -49,6 +40,10 @@ class Flora(object):
         pyglet.resource.path.append('data')
         pyglet.resource.reindex()
 
+        # Load some global stuff
+        # TODO gonna need a real pre-loading step, and also loading per map
+        pyglet.resource.add_font('fonts/short-stack.ttf')
+
     def run(self):
         # Initialize the window
         # NOTE: 16:10 is good for monitors, but 16:9 is good for TVs.  hm.
@@ -59,10 +54,9 @@ class Flora(object):
         # TODO this will need some stuff to handle a main menu scene later
         state = GameState()
 
-        controller = InputLayer(state)
         game = state.change_map('field')
 
-        scene = cocos.scene.Scene(controller, game)
+        scene = cocos.scene.Scene(game)
         dx.run(scene)
 
 

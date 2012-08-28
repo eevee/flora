@@ -63,4 +63,5 @@ class MapData(object):
                 entity_type=self._loader.load_entity_type(entity_data['type']),
                 initial_position=Point2(*entity_data['position']),
                 scale=entity_data.get('scale', 1),
+                behaviors=entity_data.get('behaviors', {}),
             )

@@ -6,5 +6,13 @@ field:
     entities:
       - type: cagroo
         position: [160, 160]
+      - type: cagroo
+        position: [800, 200]
+        behaviors:
+            on_interact: hey what's up
       - type: house
         position: [320, 320]
+      - type: unicode-flower
+        position: [600, 400]
+      - type: unicode-flower
+        position: [700, 300]
