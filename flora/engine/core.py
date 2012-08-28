@@ -1,4 +1,5 @@
 # encoding: utf8
+from __future__ import absolute_import
 from __future__ import division
 
 import cocos
@@ -58,7 +59,3 @@ class Flora(object):
 
         scene = cocos.scene.Scene(game)
         dx.run(scene)
-
-
-if __name__ == '__main__':
-    Flora().run()
