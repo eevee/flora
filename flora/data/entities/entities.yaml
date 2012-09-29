@@ -62,3 +62,6 @@ unicode-flower:
     solid: false
     pose:
         frame: unicode-flower.png
+    behaviors:
+        on_interact:
+            action: pickup

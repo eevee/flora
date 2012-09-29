@@ -9,7 +9,9 @@ field:
       - type: cagroo
         position: [800, 200]
         behaviors:
-            on_interact: hey what's up
+            on_interact:
+                action: converse
+                conversation: hey what's up
       - type: house
         position: [320, 320]
       - type: unicode-flower

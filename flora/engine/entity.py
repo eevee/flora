@@ -55,7 +55,12 @@ class Entity(cocos.sprite.Sprite):
 
     def __init__(self, entity_type, initial_position, scale, behaviors):
         self.entity_type = entity_type
-        self.behaviors = behaviors
+
+        # TODO could stand to have a dict-stack or something
+        self.behaviors = {}
+        # TODO fix this; maybe the data obj should be responsible for this merge
+        self.behaviors.update(entity_type._data.get('behaviors', {}))
+        self.behaviors.update(behaviors)
 
         self._pose = 'default'
         self._angle = DOWN

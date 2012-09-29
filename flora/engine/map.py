@@ -32,7 +32,7 @@ class WorldLayer(cocos.layer.Layer):
 
     def on_key_press(self, key, mod):
         if key == pyglet.window.key.TAB:
-            self.add(MenuLayer(), name='menu', z=self.Z_MENU)
+            self.add(MenuLayer(self._state), name='menu', z=self.Z_MENU)
 
         else:
             return False
@@ -42,6 +42,16 @@ class WorldLayer(cocos.layer.Layer):
 
     def initiate_dialogue(self, dialogue_tree):
         self.add(DialogueLayer(dialogue_tree), name='dialogue', z=self.Z_DIALOGUE)
+
+    def pick_up_item(self, entity):
+        # TODO probably needs an animation or something, much much later
+        entity.kill()
+
+        self._state.inventory.append(entity.entity_type)
+
+        # TODO i guess a pickup sound goes here
+        # TODO wow you are retarded what is any of this garbage
+        self.children[0][1].children_names['fyi'].inform('got a thing!!', entity.position)
 
 
 # TODO people are kinda violatin demeter in me
@@ -59,6 +69,7 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
 
     Z_TERRAIN = 10
     Z_ENTITIES = 20
+    Z_FYI = 80
     Z_DEBUG = 9999
 
     def __init__(self, state, mapdata):
@@ -73,6 +84,9 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
         # Entities: the interesting stuff
         entity_layer = EntityLayer()
         self.add(entity_layer, z=self.Z_ENTITIES, name='entities')
+
+        # This layer is for transient UI text, like pick-up notices.
+        self.add(FYILayer(), name='fyi', z=self.Z_FYI)
 
         self._player_entity = None
         for entity in mapdata.entities:
@@ -123,9 +137,17 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
             self._direction_stack.append(direction)
 
         elif key == pyglet.window.key.SPACE:
-            target = self.find_facing(self._player_entity)
+            # TODO what the fuck is this?  needs some kind of event handling
+            # jackass
+            target = self.find_facing(self._player_entity, with_behavior='on_interact')
             if target:
-                self.parent.initiate_dialogue(target.behaviors['on_interact'])
+                interaction = target.behaviors['on_interact']
+                if interaction['action'] == 'converse':
+                    self.parent.initiate_dialogue(interaction['conversation'])
+                elif interaction['action'] == 'pickup':
+                    self.parent.pick_up_item(target)
+                else:
+                    raise TypeError("unknown interaction type {0}".format(interaction['action']))
 
         elif key == pyglet.window.key.F4:
             self.toggle_debugging()
@@ -184,18 +206,18 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
                     int(point.x / self._mapdata.GRID_SIZE) % texture.columns,
                 ]
 
-    def find_facing(self, entity):
+    def find_facing(self, entity, with_behavior=None):
         # Find nearby things that respond to use
         # TODO really need to figure out where this kind of code goes.  surely
         # in the entity layer.
         target = entity.collision_rect
         # TODO goddamn Rect blows
-        target.position = Point2(*target.position) + entity._angle.vector * entity.entity_type.shape * 2  # XXX what should this number be...?  seems like it should be a constant size unrelated to the player's size.  one grid tile?
+        target.position = Point2(*target.position) + entity._angle.vector * entity.entity_type.shape  # XXX what should this number be...?  seems like it should be a constant size unrelated to the player's size.  one grid tile?
         for z, other in self.children_names['entities'].children:
             if other is entity:
                 continue
 
-            if 'on_interact' not in other.behaviors:
+            if with_behavior is not None and with_behavior not in other.behaviors:
                 continue
 
             # TODO again, Rect sucks
@@ -263,3 +285,19 @@ class EntityLayer(cocos.layer.ScrollableLayer):
 
     # XXX might work better to skip the cocosnode stuff entirely, use pyglet
     # sprites directly, and override draw() here.
+
+
+class FYILayer(cocos.layer.ScrollableLayer):
+    """I exist solely to show little informational messages."""
+
+    def inform(self, message, position):
+        label = cocos.text.Label(message, position=position, font_name='Short Stack', font_size=10, anchor_x='center', anchor_y='bottom')
+        label.opacity = 0.
+        self.add(label)
+
+        label.do(
+            (cocos.actions.FadeIn(0.5) | cocos.actions.MoveBy((0, 8), 0.5))
+            + cocos.actions.Delay(1)
+            + (cocos.actions.FadeOut(0.5) | cocos.actions.MoveBy((0, 8), 0.5))
+            + cocos.actions.CallFuncS(lambda self: self.kill())
+        )
