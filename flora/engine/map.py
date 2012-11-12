@@ -11,6 +11,8 @@ from flora.engine.dialogue import DialogueLayer
 from flora.engine.menu import MenuLayer
 import flora.util.direction
 
+SEARCH_DISTANCE = 64
+
 class WorldLayer(cocos.layer.Layer):
     """I'm the root layer class for the game world.  I contain the map, dialog,
     pause screen, etc., and do some light mediation between all of those
@@ -210,9 +212,28 @@ class MapLayer(cocos.layer.scrolling.ScrollingManager):
         # Find nearby things that respond to use
         # TODO really need to figure out where this kind of code goes.  surely
         # in the entity layer.
-        target = entity.collision_rect
-        # TODO goddamn Rect blows
-        target.position = Point2(*target.position) + entity._angle.vector * entity.entity_type.shape  # XXX what should this number be...?  seems like it should be a constant size unrelated to the player's size.  one grid tile?
+        # TODO also, goddamn, Rect blows.
+        # XXX the idea here is that the "activation" rectangle is a fixed size
+        # in front of the searching entity, extended inwards to touch the
+        # entity's center.  this could probably be improved or better-commented
+        # or something.
+        # TODO this makes poor use of the concept of "shape".  luckily that
+        # isn't implemented yet.
+        # TODO seems the search area should be round, and yet, it is not.  eh?
+        target = Rect(
+            0, 0,
+            SEARCH_DISTANCE + abs(entity._angle.vector[0]) * entity.entity_type.shape,
+            SEARCH_DISTANCE + abs(entity._angle.vector[1]) * entity.entity_type.shape,
+        )
+        if entity._angle is flora.util.direction.UP:
+            target.midbottom = entity.position
+        elif entity._angle is flora.util.direction.DOWN:
+            target.midtop = entity.position
+        elif entity._angle is flora.util.direction.LEFT:
+            target.midright = entity.position
+        elif entity._angle is flora.util.direction.RIGHT:
+            target.midleft = entity.position
+
         for z, other in self.children_names['entities'].children:
             if other is entity:
                 continue
@@ -296,8 +317,8 @@ class FYILayer(cocos.layer.ScrollableLayer):
         self.add(label)
 
         label.do(
-            (cocos.actions.FadeIn(0.5) | cocos.actions.MoveBy((0, 8), 0.5))
+            (cocos.actions.FadeIn(0.3) | cocos.actions.MoveBy((0, 8), 0.3))
             + cocos.actions.Delay(1)
-            + (cocos.actions.FadeOut(0.5) | cocos.actions.MoveBy((0, 8), 0.5))
+            + (cocos.actions.FadeOut(0.3) | cocos.actions.MoveBy((0, 8), 0.3))
             + cocos.actions.CallFuncS(lambda self: self.kill())
         )
