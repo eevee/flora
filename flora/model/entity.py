@@ -18,7 +18,7 @@ class EntityTypeData(object):
         self._loader = loader
         self._data = data
 
-        sprite_path = os.path.join('sprites', data['base_path'])
+        sprite_path = 'sprites/' + data['base_path']
         if 'pose' in data:
             # 'pose' as a key is a shortcut for a single pose and a single
             # angle
@@ -62,7 +62,7 @@ class EntityTypeData(object):
                 frame_textures = []
                 for frame_path in frames:
                     frame_textures.append(pyglet.resource.texture(
-                        os.path.join(sprite_path, frame_path)))
+                        u'/'.join((sprite_path, frame_path))))
 
                 animation = pyglet.image.Animation.from_image_sequence(
                     sequence=frame_textures,

@@ -38,7 +38,7 @@ class MapData(object):
         return Rect(0, 0, *self._data['size'])
 
     def _load_texture_grid(self, name):
-        img = pyglet.resource.image(os.path.join('sprites/terrain', name, 'texture.png'))
+        img = pyglet.resource.image("sprites/terrain/{0}/texture.png".format(name))
         image_grid = pyglet.image.ImageGrid(
             img,
             rows=img.height / self.GRID_SIZE,
