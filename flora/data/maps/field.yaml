@@ -6,15 +6,17 @@ field:
     entities:
       - type: cagroo
         position: [160, 160]
-      - type: cagroo
+      - type: maya
         position: [800, 200]
         behaviors:
             on_interact:
                 action: converse
-                conversation: hey what's up
+                conversation: Hey there, I'm Maya!
       - type: house
         position: [320, 320]
-      - type: unicode-flower
+      - type: flower
         position: [600, 400]
       - type: unicode-flower
         position: [700, 300]
+      - type: tree
+        position: [100, 800]

@@ -46,6 +46,27 @@ cagroo:
                     - back2.png
                     - back3.png
 
+maya:
+    base_path: characters/maya
+    shape: 40
+    poses:
+        default:
+            DOWN:
+                anchor: [29, 42]
+                frames:
+                    - front0.png
+
+tree:
+    base_path: terrain/forest
+    scale: 0.5
+    shape: 50
+    poses:
+        default:
+            DOWN:
+                anchor: [356, 214]
+                frames:
+                    - tree.png
+
 # TODO: ok, this is ridiculous.  clearly not everything needs poses, or a whole directory of sprites even.  house doesn't even have angles.  most things don't!
 house:
     base_path: buildings/house
@@ -61,6 +82,16 @@ unicode-flower:
     solid: false
     pose:
         frame: unicode-flower.png
+    behaviors:
+        on_interact:
+            action: pickup
+
+flower:
+    base_path: items/flower
+    shape: 18
+    solid: false
+    pose:
+        frame: world.png
     behaviors:
         on_interact:
             action: pickup
