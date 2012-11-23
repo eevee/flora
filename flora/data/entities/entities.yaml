@@ -2,25 +2,24 @@
 # XXX: need to put sound in here i guess.
 cagroo:
     base_path: characters/cagroo
-    scale: 0.25
     shape: 40
     poses:
         default:
             DOWN:
-                anchor: [116, 170]
+                anchor: [29, 42]
                 frames:
                     - front3.png
             LEFT:
-                anchor: [385, 134]
+                anchor: [96, 33]
                 frames:
                     - side3.png
             UP:
-                anchor: [141, 257]
+                anchor: [35, 64]
                 frames:
                     - back3.png
         walking:
             DOWN:
-                anchor: [116, 170]
+                anchor: [29, 42]
                 frames:
                     - front4.png
                     - front5.png
@@ -29,7 +28,7 @@ cagroo:
                     - front2.png
                     - front3.png
             LEFT:
-                anchor: [385, 134]
+                anchor: [96, 33]
                 frames:
                     - side4.png
                     - side5.png
@@ -38,7 +37,7 @@ cagroo:
                     - side2.png
                     - side3.png
             UP:
-                anchor: [141, 257]
+                anchor: [35, 64]
                 frames:
                     - back4.png
                     - back5.png
